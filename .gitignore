@@ -73,3 +73,6 @@ fastlane/report.xml
 
 .env.*
 
+
+Calculator.xcworkspace/xcshareddata/*
+Calculator.xcodeproj/project.xcworkspace/xcuserdata/*

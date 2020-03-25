@@ -1,0 +1,30 @@
+PODS:
+  - RxCocoa (5.0.1):
+    - RxRelay (~> 5)
+    - RxSwift (~> 5)
+  - RxRelay (5.1.0):
+    - RxSwift (~> 5)
+  - RxSwift (5.0.1)
+  - SteviaLayout (4.7.3)
+
+DEPENDENCIES:
+  - RxCocoa
+  - RxSwift
+  - SteviaLayout
+
+SPEC REPOS:
+  trunk:
+    - RxCocoa
+    - RxRelay
+    - RxSwift
+    - SteviaLayout
+
+SPEC CHECKSUMS:
+  RxCocoa: e741b9749968e8a143e2b787f1dfbff2b63d0a5c
+  RxRelay: a168bd6caf712d00c676ac344e9295afc93b418e
+  RxSwift: e2dc62b366a3adf6a0be44ba9f405efd4c94e0c4
+  SteviaLayout: c2ecdcff57d44e38fd2f65e54ad52aeae28ca0c4
+
+PODFILE CHECKSUM: 070cbe7151f2889fb6d7c1b729d5b316c95efd07
+
+COCOAPODS: 1.8.0

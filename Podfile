@@ -6,7 +6,9 @@ target 'Calculator' do
   use_frameworks!
 
   # Pods for Calculator
-
+  pod 'RxSwift'
+  pod 'RxCocoa'
+  pod 'SteviaLayout'
   target 'CalculatorTests' do
     inherit! :search_paths
     # Pods for testing
