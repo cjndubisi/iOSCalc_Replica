@@ -7,6 +7,8 @@
 //
 
 import Stevia
+import RxSwift
+import RxCocoa
 
 let padding: CGFloat = 10.0
 let rowSize: CGFloat = (UIScreen.main.bounds.width-padding*4)/4.0
@@ -14,6 +16,7 @@ let rowSize: CGFloat = (UIScreen.main.bounds.width-padding*4)/4.0
 class ViewController: UIViewController {
 
     var display: UILabel!
+    var viewModel: CalculatorViewModel = .init()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,10 +28,25 @@ class ViewController: UIViewController {
         display.contentMode = .bottom
         display.font = UIFont.systemFont(ofSize: rowSize, weight: .thin)
 
+        let keypad = buildKeypadLayout()
+
+        // Layout Constratints
+        view.sv(display, keypad)
+        view.layout(
+            (>=(rowSize/2)),
+            |-20-display.height(rowSize).fillHorizontally()-20-|,
+            padding,
+            keypad.fillHorizontally().centerHorizontally(),
+            rowSize/2
+        )
+    }
+
+    private func buildKeypadLayout() -> UIStackView {
         let numberStack = buildNumberRows()
         let uniaryStack = uniaryOperationStack()
         let rightOperations = buildOperationStack()
         let leftStack = UIStackView(arrangedSubviews: [uniaryStack, numberStack])
+
         leftStack.axis = .vertical
         leftStack.spacing = padding
 
@@ -36,17 +54,11 @@ class ViewController: UIViewController {
         stack.distribution = .fillProportionally
         stack.spacing = padding
         stack.alignment = .center
-        view.sv(display, stack)
-        view.layout(
-            (>=(rowSize/2)),
-            |-20-display.height(rowSize).fillHorizontally()-20-|,
-            padding,
-            stack.fillHorizontally().centerHorizontally(),
-            rowSize/2
-        )
+
+        return stack
     }
 
-    func buildNumberRows() -> UIStackView {
+    private func buildNumberRows() -> UIStackView {
         var rows = [UIStackView]()
         var currentStack: UIStackView!
 
@@ -98,7 +110,7 @@ class ViewController: UIViewController {
         return container
     }
 
-    func uniaryOperationStack() -> UIStackView {
+    private func uniaryOperationStack() -> UIStackView {
         var rows = [UIButton]()
 
         for item in ["AC", "±", "%"] {
@@ -117,7 +129,7 @@ class ViewController: UIViewController {
         return currentStack
     }
 
-    func buildOperationStack() -> UIStackView {
+    private func buildOperationStack() -> UIStackView {
         var rows = [UIButton]()
 
         for item in ["=", "+", "-", "×", "÷"]{
