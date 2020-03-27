@@ -72,13 +72,18 @@ struct CalculatorBrain: Brain {
 
         switch element {
         case let .operation(value):
-            // call recursively to evate operation
+            // call recursively to evalute operation
             return evaluate(precedence: Operation.precedence[value]!, stack: mutating)
         case let .operand(value):
             if case let .operation(op) = mutating.last {
                 if precedence.rawValue > Operation.precedence[op]!.rawValue {
-                    //
+                    // handle when the next operation is less (-, +) than a higer_op (x, /)
                     return (value, precedence, mutating)
+                } else if precedence.rawValue == Operation.precedence[op]!.rawValue {
+                    let result = evaluate(precedence: Operation.precedence[op]!, stack: mutating)
+                    if let operand2 = result.result {
+                        return (Operation.operations[op]!(operand2, value), Operation.precedence[op]!, mutating)
+                    }
                 } else {
                     let result = evaluate(precedence: Operation.precedence[op]!, stack: mutating)
                     if let operand2 = result.result {
