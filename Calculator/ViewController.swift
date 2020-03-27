@@ -17,6 +17,7 @@ class ViewController: UIViewController {
 
     var display: UILabel!
     var viewModel: CalculatorViewModel = .init()
+    let disposeBag = DisposeBag()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,6 +31,8 @@ class ViewController: UIViewController {
 
         let keypad = buildKeypadLayout()
 
+        viewModel.displayDriver.drive(display.rx.text).disposed(by: disposeBag)
+
         // Layout Constratints
         view.sv(display, keypad)
         view.layout(
@@ -42,10 +45,24 @@ class ViewController: UIViewController {
     }
 
     private func buildKeypadLayout() -> UIStackView {
-        let numberStack = buildNumberRows()
+        let (numberStack, buttons) = buildNumberRows()
         let uniaryStack = uniaryOperationStack()
-        let rightOperations = buildOperationStack()
+        let (rightOperations, operationBtns) = buildOperationStack()
         let leftStack = UIStackView(arrangedSubviews: [uniaryStack, numberStack])
+
+        // Target Actions
+        let numberTokens = buttons.map { btn -> Disposable in
+            let title = btn.currentTitle!
+            return btn.rx.tap.map({ title }).bind(to: viewModel.numberPressed)
+        }
+
+        let binaryOpsTokens = operationBtns.map { btn -> Disposable in
+            let title = btn.currentTitle!
+            return btn.rx.tap.map({ title }).bind(to: viewModel.binaryOperationPressed)
+        }
+
+        self.disposeBag.insert(numberTokens + binaryOpsTokens)
+
 
         leftStack.axis = .vertical
         leftStack.spacing = padding
@@ -58,8 +75,9 @@ class ViewController: UIViewController {
         return stack
     }
 
-    private func buildNumberRows() -> UIStackView {
+    private func buildNumberRows() -> (container: UIStackView, subviews: [UIButton]) {
         var rows = [UIStackView]()
+        var buttons = [UIButton]()
         var currentStack: UIStackView!
 
         for (index, item) in (1...9).enumerated() {
@@ -78,6 +96,8 @@ class ViewController: UIViewController {
             } else {
                 currentStack.addArrangedSubview(button)
             }
+
+            buttons.append(button)
         }
 
         rows.reverse()
@@ -100,6 +120,7 @@ class ViewController: UIViewController {
         bottomStack.distribution = .fill
 
         rows.append(bottomStack)
+        buttons.append(contentsOf: [zeroButton, decimalButton])
 
         let container = UIStackView(arrangedSubviews: rows)
         container.distribution = .fillEqually
@@ -107,7 +128,7 @@ class ViewController: UIViewController {
         container.alignment = .center
         container.axis = .vertical
 
-        return container
+        return (container, buttons)
     }
 
     private func uniaryOperationStack() -> UIStackView {
@@ -129,7 +150,7 @@ class ViewController: UIViewController {
         return currentStack
     }
 
-    private func buildOperationStack() -> UIStackView {
+    private func buildOperationStack() -> (container: UIStackView, subviews: [UIButton]) {
         var rows = [UIButton]()
 
         for item in ["=", "+", "-", "×", "÷"]{
@@ -146,7 +167,7 @@ class ViewController: UIViewController {
         currentStack.distribution = .fillEqually
         currentStack.alignment = .center
 
-        return currentStack
+        return (currentStack, rows)
     }
 }
 
