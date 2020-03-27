@@ -45,4 +45,26 @@ class CalculatorBrainTest: XCTestCase {
 
         XCTAssertEqual(brain.evaluate(with: "×"), 4.0)
     }
+
+    func testCompleteOperationsEndingInAddition() {
+        brain.add(operand: 1)
+        brain.add(operation: "+")
+        brain.add(operand: 3)
+        brain.add(operation: "×")
+        brain.add(operand: 5)
+
+        XCTAssertEqual(brain.evaluate(with: "+"), 16)
+    }
+
+    func testCompleteOperationsEndingInMuliplication() {
+        brain.add(operand: 1)
+        brain.add(operation: "+")
+        brain.add(operand: 3)
+        brain.add(operation: "×")
+        brain.add(operand: 5)
+
+        XCTAssertEqual(brain.evaluate(with: "×"), 15)
+        XCTAssertEqual(brain.evaluate(with: "+"), 16)
+
+    }
 }
