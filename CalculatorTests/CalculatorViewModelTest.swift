@@ -58,7 +58,7 @@ class CalculatorViewModelTests: XCTestCase {
 
         scheduler.start()
 
-        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "1"), .next(3, "1"), .next(4, "2")])
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "1"), .next(2, "1"), .next(3, "1"), .next(4, "2")])
     }
 
     func testSubstractionPasses() {
@@ -77,7 +77,26 @@ class CalculatorViewModelTests: XCTestCase {
 
         scheduler.start()
 
-        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(3, "2"), .next(4, "1")])
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(2, "3"), .next(3, "2"), .next(4, "1")])
+    }
+
+    func testMultiplicationPasses() {
+        // 3 * 2 +
+        let display = scheduler.createObserver(String.self)
+
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "3"), .next(3, "2")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(2, "×"), .next(4, "+")])
+            .bind(to: viewModel.binaryOperationPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(2, "3"), .next(3, "2"), .next(4, "6")])
     }
 
     func testCanComputeMultipleAddAndSubOperation() {
@@ -97,26 +116,47 @@ class CalculatorViewModelTests: XCTestCase {
 
         scheduler.start()
 
-        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(3, "2"), .next(4, "1"), .next(5, "4"), .next(6, "5")])
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(2, "3"), .next(3, "2"), .next(4, "1"), .next(5, "4"), .next(6, "5")])
     }
 
-    func testEqualsOperationComputesStack() {
-        // 3 - 2 + 4 -
+    func testComputeMulitplicaitonOperationFirst() {
+           // 3 x 2 + 4
+
+        let display = scheduler.createObserver(String.self)
+        
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "3"), .next(3, "2")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+        
+        scheduler.createColdObservable([.next(2, "-"), .next(4, "×")])
+            .bind(to: viewModel.binaryOperationPressed)
+            .disposed(by: disposeBag)
+        
+        scheduler.start()
+
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(2, "3"), .next(3, "2"), .next(4, "2")])
+       }
+
+    func testReEvaluatesWhenChangingOperand() {
+        // 1 + 3 * 5 * -> 15; + -> 16
 
         let display = scheduler.createObserver(String.self)
 
         viewModel.displayDriver.drive(display).disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(1, "3"), .next(3, "2"), .next(6, "4")])
+        scheduler.createColdObservable([.next(1, "1"), .next(3, "3"), .next(5, "5")])
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(2, "-"), .next(4, "="), .next(5, "+"), .next(7, "-")])
+        scheduler.createColdObservable([.next(2, "+"), .next(4, "×"), .next(6, "+"), .next(8, "×")])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
 
         scheduler.start()
 
-        XCTAssertEqual(display.events[(display.events.count-3)...], [.next(4, "1"), .next(6, "4"), .next(7, "5")])
+        XCTAssertEqual(display.events[(display.events.count-2)...], [.next(6, "16"), .next(8, "15")])
+
     }
 }

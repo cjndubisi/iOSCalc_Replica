@@ -132,32 +132,32 @@ public struct CalculatorViewModel {
 
         let formatter = NumberFormatter()
         formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 50
 
-        let operationTapped = userIsTyping.filter{ !$0 }
-            .skip(1) // ignore first item
-            .withLatestFrom(display)
-            .compactMap({ formatter.number(from: $0)?.doubleValue })
+        let operationTapped = Observable.combineLatest(
+            display.compactMap({ formatter.number(from: $0)?.doubleValue }),
+            binaryOperationAction.asObservable()
+        )
+            .sample(userIsTyping.skip(1).debug().distinctUntilChanged().filter{ !$0 })
             .subscribe(onNext: {
-                core.add(operand: $0)
+                core.add(operand: $0.0)
             })
 
+        // Only add an operation when user switchs from
+        // selecting an operation to typing a number
+        let token = userIsTyping.skip(1).filter({ $0 })
+            .withLatestFrom(binaryOperationAction.asObservable())
+            .subscribe(onNext: {
+                core.add(operation: $0)
+            })
 
         let binaryToken = binaryOperationAction.filter { !$0.isEmpty }
-            .scan("", accumulator: { (acc, nextOp) -> String in
-                guard Operation.operations.keys.contains(acc) else { return nextOp }
-
-                // add current display and last operation
-                core.add(operand: formatter.number(from: display.value)!.doubleValue)
-                core.add(operation: acc)
-
-                return nextOp
-            })
             .subscribe(onNext: { operation in
-                // handle Equals
-                if let result = core.evaluate(), let number = formatter.string(from: result as NSNumber) {
+                userIsTyping.accept(false)
+                
+                if let result = core.evaluate(with: operation), let number = formatter.string(from: result as NSNumber) {
                     display.accept(number)
                 }
-                userIsTyping.accept(false)
         })
 
         brain = core
@@ -165,6 +165,6 @@ public struct CalculatorViewModel {
         numberPressed = numberAction.asObserver()
         displayDriver = display.asDriver()
         canReset = userIsTyping.asObservable()
-        disposables = CompositeDisposable(disposables: [numberToDisplay, binaryToken, operationTapped])
+        disposables = CompositeDisposable(disposables: [numberToDisplay, binaryToken, operationTapped, token])
     }
 }
