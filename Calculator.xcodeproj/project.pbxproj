@@ -16,6 +16,7 @@
 		4F0F53DF242BCE30006C06E6 /* UIKit+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F0F53DE242BCE30006C06E6 /* UIKit+Extensions.swift */; };
 		4F56E4E3242CE1FB00648437 /* CalculatorViewModelTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F56E4E2242CE1FB00648437 /* CalculatorViewModelTest.swift */; };
 		4F56E4E5242D1A7400648437 /* CalculatorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F56E4E4242D1A7400648437 /* CalculatorViewModel.swift */; };
+		4F79F33D242E0B70005E398D /* CalculatorBrainTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F79F33C242E0B70005E398D /* CalculatorBrainTest.swift */; };
 		DAE19A2695E19E21329FF7DF /* Pods_Calculator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 24E5AE4AFAAAFEB5D137926C /* Pods_Calculator.framework */; };
 		DD39C28F234462BA207FB348 /* Pods_CalculatorTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6108C7FB50FB065A6FDCE2A9 /* Pods_CalculatorTests.framework */; };
 /* End PBXBuildFile section */
@@ -48,6 +49,7 @@
 		4F0F53DE242BCE30006C06E6 /* UIKit+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIKit+Extensions.swift"; sourceTree = "<group>"; };
 		4F56E4E2242CE1FB00648437 /* CalculatorViewModelTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorViewModelTest.swift; sourceTree = "<group>"; };
 		4F56E4E4242D1A7400648437 /* CalculatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorViewModel.swift; sourceTree = "<group>"; };
+		4F79F33C242E0B70005E398D /* CalculatorBrainTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorBrainTest.swift; sourceTree = "<group>"; };
 		6108C7FB50FB065A6FDCE2A9 /* Pods_CalculatorTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalculatorTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6D8026BB52C69F7A57A3BB8 /* Pods-CalculatorTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalculatorTests.debug.xcconfig"; path = "Target Support Files/Pods-CalculatorTests/Pods-CalculatorTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -111,6 +113,7 @@
 			isa = PBXGroup;
 			children = (
 				4F0F53CA242BA8DB006C06E6 /* CalculatorTests.swift */,
+				4F79F33C242E0B70005E398D /* CalculatorBrainTest.swift */,
 				4F56E4E2242CE1FB00648437 /* CalculatorViewModelTest.swift */,
 				4F0F53CC242BA8DB006C06E6 /* Info.plist */,
 			);
@@ -343,6 +346,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4F56E4E3242CE1FB00648437 /* CalculatorViewModelTest.swift in Sources */,
+				4F79F33D242E0B70005E398D /* CalculatorBrainTest.swift in Sources */,
 				4F0F53CB242BA8DB006C06E6 /* CalculatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -14,29 +14,32 @@ enum Element {
     case operand(Double)
 }
 
-enum Operation {
-    case constant(Double)
-    case nullaryOperation(() -> Double)
-    case unaryOperation((Double) -> Double)
-    case binaryOperation((Double, Double) -> Double)
-    case equals
+enum Precedence: Int {
+    case high = 10
+    case low = 5
+}
 
-    static var operations: [String: Operation] = [
-        "%": Operation.unaryOperation({ $0/100 }),
-        "±": Operation.unaryOperation({ -$0 }),
-        "×": Operation.binaryOperation(*),
-        "÷": Operation.binaryOperation(/),
-        "+": Operation.binaryOperation(+),
-        "-": Operation.binaryOperation(-),
-        "=": Operation.equals
+enum Operation {
+    static var operations: [String: (Double, Double) -> Double] = [
+        "×": (*),
+        "÷": (/),
+        "+": (+),
+        "-": (-),
     ]
 
+    static var precedence: [String: Precedence] = [
+        "×": .high,
+        "÷": .high,
+        "+": .low,
+        "-": .low,
+    ]
 }
 protocol Brain {
     mutating func add(operand: Double)
     mutating func add(operation: String)
 
     mutating func evaluate() -> Double?
+    mutating func evaluate(with operation: String) -> Double?
 }
 
 struct CalculatorBrain: Brain {
@@ -52,36 +55,40 @@ struct CalculatorBrain: Brain {
     }
 
     mutating func evaluate() -> Double? {
-        guard opStack.count % 3 == 0 else { return nil }
-        if case let .operand(value) = evaluate(stack: opStack) {
-            return value
-        }
-        return nil
+        let result = evaluate(precedence: .low, stack: opStack)
+        return result.result
      }
 
-    private func evaluate(stack: [Element]) -> Element? {
+    mutating func evaluate(with operation: String) -> Double? {
+        return evaluate(precedence: Operation.precedence[operation]!, stack: opStack).result
+    }
+
+    private func evaluate(precedence: Precedence, stack: [Element]) -> (result: Double?, precedence: Precedence, remaining: [Element]) {
         var mutating = stack
 
         guard let element = mutating.popLast() else {
-            return nil
-        }
-        switch element {
-        case let .operation(value):
-            switch Operation.operations[value] {
-            case let .binaryOperation(function):
-                if case let .operand(first) = mutating.popLast(), case let .operand(second) = mutating.popLast() {
-                    return evaluate(stack: [Element.operand(function(second, first))] + mutating)
-                }
-            case .equals:
-                return evaluate(stack: mutating)
-            default:
-                return element
-            }
-        case .operand:
-            return element
+            return (nil, .low, mutating)
         }
 
-        return element
+        switch element {
+        case .operation:
+            return evaluate(precedence: precedence, stack: mutating)
+        case let .operand(value):
+            if case let .operation(op) = mutating.last {
+                let result = evaluate(precedence: precedence, stack: mutating)
+
+                if precedence.rawValue > result.precedence.rawValue {
+                    if result.remaining.isEmpty {
+                        return (value, result.precedence, [])
+                    }
+                    return evaluate(precedence: precedence, stack: result.remaining)
+                }
+                else if let operand2 = result.result {
+                    return (Operation.operations[op]!(operand2, value), .low, result.remaining)
+                }
+            }
+            return (value, .low, mutating)
+        }
     }
 }
 
