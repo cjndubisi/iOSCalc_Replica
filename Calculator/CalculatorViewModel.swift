@@ -10,7 +10,7 @@ import RxSwift
 import RxCocoa
 
 enum Element {
-    case operation(String)
+    case operation(Operation)
     case operand(Double)
 }
 
@@ -19,27 +19,37 @@ enum Precedence: Int {
     case low = 5
 }
 
-enum Operation {
-    static var operations: [String: (Double, Double) -> Double] = [
-        "×": (*),
-        "÷": (/),
-        "+": (+),
-        "-": (-),
-    ]
+enum Operation: String {
+    case multiply = "×"
+    case divide = "÷"
+    case add = "+"
+    case subtract = "-"
 
-    static var precedence: [String: Precedence] = [
-        "×": .high,
-        "÷": .high,
-        "+": .low,
-        "-": .low,
-    ]
+    var action: (Double, Double) -> Double {
+        switch self {
+            case Operation.multiply: return  (*)
+            case Operation.divide: return  (/)
+            case Operation.add: return  (+)
+            case Operation.subtract: return  (-)
+        }
+    }
+
+    var precedence: Precedence {
+        switch self {
+        case Operation.multiply: return  .high
+        case Operation.divide: return  .high
+        case Operation.add: return  .low
+        case Operation.subtract: return  .low
+        }
+    }
+
 }
 protocol Brain {
     mutating func add(operand: Double)
-    mutating func add(operation: String)
+    mutating func add(operation: Operation)
 
     mutating func evaluate() -> Double?
-    mutating func evaluate(with operation: String) -> Double?
+    mutating func evaluate(with operation: Operation) -> Double?
 }
 
 struct CalculatorBrain: Brain {
@@ -50,8 +60,8 @@ struct CalculatorBrain: Brain {
         opStack.append(Element.operand(operand))
     }
 
-    mutating func add(operation: String) {
-        opStack.append(Element.operation(operation))
+    mutating func add(operation: Operation) {
+        opStack.append(.operation(operation))
     }
 
     mutating func evaluate() -> Double? {
@@ -59,8 +69,8 @@ struct CalculatorBrain: Brain {
         return result.result
      }
 
-    mutating func evaluate(with operation: String) -> Double? {
-        return evaluate(precedence: Operation.precedence[operation]!, stack: opStack).result
+    mutating func evaluate(with operation: Operation) -> Double? {
+        return evaluate(precedence: operation.precedence, stack: opStack).result
     }
 
     private func evaluate(precedence: Precedence, stack: [Element]) -> (result: Double?, precedence: Precedence, remaining: [Element]) {
@@ -73,21 +83,21 @@ struct CalculatorBrain: Brain {
         switch element {
         case let .operation(value):
             // call recursively to evalute operation
-            return evaluate(precedence: Operation.precedence[value]!, stack: mutating)
+            return evaluate(precedence:  value.precedence, stack: mutating)
         case let .operand(value):
             if case let .operation(op) = mutating.last {
-                if precedence.rawValue > Operation.precedence[op]!.rawValue {
+                if precedence.rawValue > op.precedence.rawValue {
                     // handle when the next operation is less (-, +) than a higer_op (x, /)
                     return (value, precedence, mutating)
-                } else if precedence.rawValue == Operation.precedence[op]!.rawValue {
-                    let result = evaluate(precedence: Operation.precedence[op]!, stack: mutating)
+                } else if precedence.rawValue == op.precedence.rawValue {
+                    let result = evaluate(precedence: op.precedence, stack: mutating)
                     if let operand2 = result.result {
-                        return (Operation.operations[op]!(operand2, value), Operation.precedence[op]!, mutating)
+                        return (op.action(operand2, value), op.precedence, mutating)
                     }
                 } else {
-                    let result = evaluate(precedence: Operation.precedence[op]!, stack: mutating)
+                    let result = evaluate(precedence: op.precedence, stack: mutating)
                     if let operand2 = result.result {
-                        let rest = Operation.operations[op]!(operand2, value)
+                        let rest = op.action(operand2, value)
                         return evaluate(precedence: .low, stack: result.remaining + [.operand(rest)])
                     }
                 }
@@ -120,6 +130,11 @@ public struct CalculatorViewModel {
         let userIsTyping = BehaviorRelay<Bool>(value: false)
         var core: Brain = CalculatorBrain()
 
+        // convert to type
+        let typedBinaryAction = binaryOperationAction
+            .asObservable()
+            .compactMap({ Operation(rawValue: $0)})
+
         let numberToDisplay = numberAction.withLatestFrom(display) { number, display in
             let isTyping = userIsTyping.value
             guard isTyping else {
@@ -134,27 +149,29 @@ public struct CalculatorViewModel {
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 50
 
+
         let operationTapped = Observable.combineLatest(
             display.compactMap({ formatter.number(from: $0)?.doubleValue }),
-            binaryOperationAction.asObservable()
+            typedBinaryAction
         )
             .sample(userIsTyping.skip(1).debug().distinctUntilChanged().filter{ !$0 })
             .subscribe(onNext: {
                 core.add(operand: $0.0)
             })
 
+
         // Only add an operation when user switchs from
         // selecting an operation to typing a number
         let token = userIsTyping.skip(1).filter({ $0 })
-            .withLatestFrom(binaryOperationAction.asObservable())
+            .withLatestFrom(typedBinaryAction)
             .subscribe(onNext: {
                 core.add(operation: $0)
             })
 
-        let binaryToken = binaryOperationAction.filter { !$0.isEmpty }
+        let binaryToken = typedBinaryAction
             .subscribe(onNext: { operation in
                 userIsTyping.accept(false)
-                
+
                 if let result = core.evaluate(with: operation), let number = formatter.string(from: result as NSNumber) {
                     display.accept(number)
                 }

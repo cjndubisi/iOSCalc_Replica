@@ -52,7 +52,7 @@ class CalculatorViewModelTests: XCTestCase {
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(2, "+"), .next(4, "+")])
+        scheduler.createColdObservable([.next(2, Operation.add.rawValue), .next(4, Operation.add.rawValue)])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
 
@@ -71,7 +71,7 @@ class CalculatorViewModelTests: XCTestCase {
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(2, "-"), .next(4, "+")])
+        scheduler.createColdObservable([.next(2, Operation.subtract.rawValue), .next(4, Operation.add.rawValue)])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
 
@@ -86,17 +86,21 @@ class CalculatorViewModelTests: XCTestCase {
 
         viewModel.displayDriver.drive(display).disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(1, "3"), .next(3, "2")])
+        scheduler.createColdObservable([.next(1, "3"),
+                                        .next(3, "2")])
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(2, "×"), .next(4, "+")])
+        scheduler.createColdObservable([.next(2, Operation.multiply.rawValue),
+                                        .next(4, Operation.add.rawValue)])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
 
         scheduler.start()
 
-        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(2, "3"), .next(3, "2"), .next(4, "6")])
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"),
+                                        .next(2, "3"), .next(3, "2"),
+                                        .next(4, "6")])
     }
 
     func testCanComputeMultipleAddAndSubOperation() {
@@ -110,7 +114,9 @@ class CalculatorViewModelTests: XCTestCase {
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(2, "-"), .next(4, "+"), .next(6, "-")])
+        scheduler.createColdObservable([.next(2, Operation.subtract.rawValue),
+                                        .next(4, Operation.add.rawValue),
+                                        .next(6, Operation.subtract.rawValue)])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
 
@@ -130,13 +136,16 @@ class CalculatorViewModelTests: XCTestCase {
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
         
-        scheduler.createColdObservable([.next(2, "-"), .next(4, "×")])
+        scheduler.createColdObservable([.next(2, Operation.subtract.rawValue),
+                                        .next(4, Operation.multiply.rawValue)])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
         
         scheduler.start()
 
-        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"), .next(2, "3"), .next(3, "2"), .next(4, "2")])
+        XCTAssertEqual(display.events, [.next(0, "0"), .next(1, "3"),
+                                        .next(2, "3"), .next(3, "2"),
+                                        .next(4, "2")])
        }
 
     func testReEvaluatesWhenChangingOperand() {
@@ -150,7 +159,10 @@ class CalculatorViewModelTests: XCTestCase {
             .bind(to: viewModel.numberPressed)
             .disposed(by: disposeBag)
 
-        scheduler.createColdObservable([.next(2, "+"), .next(4, "×"), .next(6, "+"), .next(8, "×")])
+        scheduler.createColdObservable([.next(2, Operation.add.rawValue),
+                                        .next(4, Operation.multiply.rawValue),
+                                        .next(6, Operation.add.rawValue),
+                                        .next(8, Operation.multiply.rawValue)])
             .bind(to: viewModel.binaryOperationPressed)
             .disposed(by: disposeBag)
 

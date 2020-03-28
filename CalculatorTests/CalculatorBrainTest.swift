@@ -23,7 +23,7 @@ class CalculatorBrainTest: XCTestCase {
 
     func testCanEvaluateSimpleAddOperation() {
         brain.add(operand: 3)
-        brain.add(operation: "+")
+        brain.add(operation: .add)
         brain.add(operand: 4)
 
         XCTAssertEqual(brain.evaluate(), 7)
@@ -31,7 +31,7 @@ class CalculatorBrainTest: XCTestCase {
 
     func testCanEvaluateMuliplicationOperation() {
         brain.add(operand: 3)
-        brain.add(operation: "×")
+        brain.add(operation: .multiply)
         brain.add(operand: 4)
 
         XCTAssertEqual(brain.evaluate(), 12)
@@ -39,32 +39,32 @@ class CalculatorBrainTest: XCTestCase {
 
     func testShouldReturnLastOperandForIncompeteMuliplication() {
         brain.add(operand: 3)
-        brain.add(operation: "+")
+        brain.add(operation: .add)
         brain.add(operand: 4)
 
 
-        XCTAssertEqual(brain.evaluate(with: "×"), 4.0)
+        XCTAssertEqual(brain.evaluate(with: .multiply), 4.0)
     }
 
     func testCompleteOperationsEndingInAddition() {
         brain.add(operand: 1)
-        brain.add(operation: "+")
+        brain.add(operation: .add)
         brain.add(operand: 3)
-        brain.add(operation: "×")
+        brain.add(operation: .multiply)
         brain.add(operand: 5)
 
-        XCTAssertEqual(brain.evaluate(with: "+"), 16)
+        XCTAssertEqual(brain.evaluate(with: .add), 16)
     }
 
     func testCompleteOperationsEndingInMuliplication() {
         brain.add(operand: 1)
-        brain.add(operation: "+")
+        brain.add(operation: .add)
         brain.add(operand: 3)
-        brain.add(operation: "×")
+        brain.add(operation: .multiply)
         brain.add(operand: 5)
 
-        XCTAssertEqual(brain.evaluate(with: "×"), 15)
-        XCTAssertEqual(brain.evaluate(with: "+"), 16)
+        XCTAssertEqual(brain.evaluate(with: .multiply), 15)
+        XCTAssertEqual(brain.evaluate(with: .add), 16)
 
     }
 }
