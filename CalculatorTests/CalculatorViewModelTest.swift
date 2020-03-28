@@ -169,6 +169,32 @@ class CalculatorViewModelTests: XCTestCase {
         scheduler.start()
 
         XCTAssertEqual(display.events[(display.events.count-2)...], [.next(6, "16"), .next(8, "15")])
+    }
+    
+    func testDecimalOccurance() {
+        let display = scheduler.createObserver(String.self)
 
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "."), .next(3, "2")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(display.events[1...], [.next(1, "0."), .next(3, "0.2")])
+    }
+
+    func testIgnoresExtraDecimal() {
+        let display = scheduler.createObserver(String.self)
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "."), .next(3, "2"), .next(4, ".")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(display.events[1...], [.next(1, "0."), .next(3, "0.2"), .next(4, "0.2")])
     }
 }

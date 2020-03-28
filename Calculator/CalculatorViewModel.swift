@@ -136,11 +136,21 @@ public struct CalculatorViewModel {
             .compactMap({ Operation(rawValue: $0)})
 
         let numberToDisplay = numberAction.withLatestFrom(display) { number, display in
+            // user is typing after either return(s)
+            defer { userIsTyping.accept(true) }
+
             let isTyping = userIsTyping.value
-            guard isTyping else {
-                userIsTyping.accept(true)
+
+            // ignore extra decmial
+            if number == "." && display.contains(".") {
+                return display
+            }
+
+            guard isTyping || number == "." else {
+                selected.onNext(.none)
                 return number
             }
+            
             return display + number
         }
         .bind(to: display)
