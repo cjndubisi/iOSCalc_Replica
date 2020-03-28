@@ -67,4 +67,15 @@ class CalculatorBrainTest: XCTestCase {
         XCTAssertEqual(brain.evaluate(with: .add), 16)
 
     }
+
+    func testDivisionOperationsEndingInAddition() {
+        brain.add(operand: 15)
+        brain.add(operation: .divide)
+        brain.add(operand: 2)
+        brain.add(operation: .divide)
+        brain.add(operand: 2)
+
+        XCTAssertEqual(brain.evaluate(with: .divide), 3.75)
+        XCTAssertEqual(brain.evaluate(with: .add), 3.75)
+    }
 }

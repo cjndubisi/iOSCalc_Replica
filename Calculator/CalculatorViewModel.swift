@@ -92,7 +92,7 @@ struct CalculatorBrain: Brain {
                 } else if precedence.rawValue == op.precedence.rawValue {
                     let result = evaluate(precedence: op.precedence, stack: mutating)
                     if let operand2 = result.result {
-                        return (op.action(operand2, value), op.precedence, mutating)
+                        return (op.action(operand2, value), op.precedence, result.remaining)
                     }
                 } else {
                     let result = evaluate(precedence: op.precedence, stack: mutating)
