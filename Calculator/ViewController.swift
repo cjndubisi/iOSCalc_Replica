@@ -227,7 +227,7 @@ class ViewController: UIViewController {
     private func buildOperationStack() -> (container: UIStackView, subviews: [UIButton]) {
         var rows = [UIButton]()
 
-        for item in ["=", "+", "-", "×", "÷"] {
+        for item in ["=", "+", "−", "×", "÷"] {
             let button = RoundButton()
             operationStyle(button)
             numberConstraints(button)
@@ -259,7 +259,7 @@ let operationStyle: (UIButton) -> Void = { btn in
     btn.setBackgroundColor(.white, for: .selected)
 
     btn.contentEdgeInsets.bottom = 5
-    btn.titleLabel?.font = UIFont.systemFont(ofSize: fontSize.dp, weight: .regular)
+    btn.titleLabel?.font = UIFont.systemFont(ofSize: fontSize.dp, weight: .medium)
     btn.setTitleColor(.white, for: .normal)
     btn.setTitleColor(ColorPalette.binaryOperationButton, for: .selected)
 }
@@ -289,6 +289,6 @@ struct ColorPalette {
     static let binaryOperationButton: UIColor = .init(red: 254/255.0, green: 160/255.0, blue: 43/255, alpha: 1)
     static let binaryOperationButtonHighlighted: UIColor = .init(red: 255/255.0, green: 199/255.0, blue: 148/255, alpha: 1)
 
-    static let UnaryOperationButton: UIColor = .init(red: 169/255.0, green: 166/255.0, blue: 169/255, alpha: 1)
+    static let UnaryOperationButton: UIColor = .init(red: 164/255.0, green: 165/255.0, blue: 166/255, alpha: 1)
     static let UnaryOperationButtonHighlighted: UIColor = .init(red: 219/255.0, green: 217/255.0, blue: 220/255, alpha: 1)
 }

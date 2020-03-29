@@ -28,7 +28,7 @@ enum Operation: String {
     case multiply = "×"
     case divide = "÷"
     case add = "+"
-    case subtract = "-"
+    case subtract = "−"
     case none
 
     var action: (Double, Double) -> Double {
