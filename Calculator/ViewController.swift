@@ -48,9 +48,9 @@ class ViewController: UIViewController {
 
     private func buildKeypadLayout() -> UIStackView {
         let (numberStack, buttons) = buildNumberRows()
-        let (uniaryStack, uniaryBtns) = uniaryOperationStack()
+        let (unaryStack, unaryBtns) = UnaryOperationStack()
         let (rightOperations, operationBtns) = buildOperationStack()
-        let leftStack = UIStackView(arrangedSubviews: [uniaryStack, numberStack])
+        let leftStack = UIStackView(arrangedSubviews: [unaryStack, numberStack])
 
         // Target Actions
         let numberTokens = buttons.map { btn -> Disposable in
@@ -59,10 +59,10 @@ class ViewController: UIViewController {
                 .bind(to: viewModel.numberPressed)
         }
 
-        let uniaryToken = uniaryBtns.map { btn -> Disposable in
+        let unaryToken = unaryBtns.map { btn -> Disposable in
             let title = btn.currentTitle!
             return btn.rx.tap.map({ title })
-                .bind(to: viewModel.uniaryOperationPressed)
+                .bind(to: viewModel.UnaryOperationPressed)
         }
 
         Observable.combineLatest(
@@ -90,7 +90,7 @@ class ViewController: UIViewController {
             return btn.rx.tap.map({ title }).bind(to: viewModel.binaryOperationPressed)
         }
 
-        self.disposeBag.insert(numberTokens + binaryOpsTokens + uniaryToken)
+        self.disposeBag.insert(numberTokens + binaryOpsTokens + unaryToken)
 
 
         leftStack.axis = .vertical
@@ -160,12 +160,12 @@ class ViewController: UIViewController {
         return (container, buttons)
     }
 
-    private func uniaryOperationStack() -> (container: UIStackView, subviews: [UIButton]) {
+    private func UnaryOperationStack() -> (container: UIStackView, subviews: [UIButton]) {
         var rows = [UIButton]()
 
         for item in ["AC", "±", "%"] {
             let button = RoundButton()
-            uniaryOperationStyle(button)
+            UnaryOperationStyle(button)
             numberConstraints(button)
             button.setTitle("\(item)", for: .normal)
             rows.append(button)
@@ -201,9 +201,9 @@ class ViewController: UIViewController {
 }
 
 let fontSize: CGFloat = 45
-let uniaryOperationStyle: (UIButton) -> Void = { btn in
-    btn.setBackgroundColor(ColorPalette.uniaryOperationButton, for: .normal)
-    btn.setBackgroundColor(ColorPalette.uniaryOperationButtonHighlighted, for: .highlighted)
+let UnaryOperationStyle: (UIButton) -> Void = { btn in
+    btn.setBackgroundColor(ColorPalette.UnaryOperationButton, for: .normal)
+    btn.setBackgroundColor(ColorPalette.UnaryOperationButtonHighlighted, for: .highlighted)
     btn.titleLabel?.font =  UIFont.systemFont(ofSize: fontSize * 0.8, weight: .medium)
     btn.setTitleColor(.black, for: .normal)
 }
@@ -244,6 +244,6 @@ struct ColorPalette {
     static let binaryOperationButton: UIColor = .init(red: 254/255.0, green: 160/255.0, blue: 43/255, alpha: 1)
     static let binaryOperationButtonHighlighted: UIColor = .init(red: 255/255.0, green: 199/255.0, blue: 148/255, alpha: 1)
 
-    static let uniaryOperationButton: UIColor = .init(red: 169/255.0, green: 166/255.0, blue: 169/255, alpha: 1)
-    static let uniaryOperationButtonHighlighted: UIColor = .init(red: 219/255.0, green: 217/255.0, blue: 220/255, alpha: 1)
+    static let UnaryOperationButton: UIColor = .init(red: 169/255.0, green: 166/255.0, blue: 169/255, alpha: 1)
+    static let UnaryOperationButtonHighlighted: UIColor = .init(red: 219/255.0, green: 217/255.0, blue: 220/255, alpha: 1)
 }

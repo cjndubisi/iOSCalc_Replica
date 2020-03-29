@@ -47,7 +47,7 @@ enum Operation: String {
     }
 }
 
-enum UniaryOperation: String {
+enum UnaryOperation: String {
     case negate = "±"
     case percentage = "%"
 
@@ -63,14 +63,14 @@ protocol Brain {
     var isEmpty: Bool { get }
     mutating func add(operand: Double)
     mutating func add(operation: Operation)
-    func tansform(number: Double, using operator: UniaryOperation) -> Double
+    func tansform(number: Double, using operator: UnaryOperation) -> Double
 
     mutating func evaluate() -> Double?
     mutating func evaluate(with operation: Operation) -> Double?
 }
 
 extension Brain {
-    func tansform(number: Double, using operation: UniaryOperation) -> Double {
+    func tansform(number: Double, using operation: UnaryOperation) -> Double {
         return operation.action(number)
     }
 }
@@ -155,7 +155,7 @@ public struct CalculatorViewModel {
     // observers
     let numberPressed: AnyObserver<String>
     let binaryOperationPressed: AnyObserver<String>
-    let uniaryOperationPressed: AnyObserver<String>
+    let UnaryOperationPressed: AnyObserver<String>
     // disposables
     let disposables: CompositeDisposable
     var brain: Brain!
@@ -164,7 +164,7 @@ public struct CalculatorViewModel {
         let numberAction = PublishSubject<String>()
         let display = BehaviorRelay<String>(value: "0")
         let binaryOperationAction = PublishSubject<String>()
-        let uniaryOperationAction = PublishSubject<String>()
+        let UnaryOperationAction = PublishSubject<String>()
         let selected = PublishSubject<Operation>()
 
         let userIsTyping = BehaviorRelay<Bool>(value: false)
@@ -196,9 +196,9 @@ public struct CalculatorViewModel {
         }
         .bind(to: display)
 
-        let typedUniaryAction = uniaryOperationAction
+        let typedunaryAction = UnaryOperationAction
             .filter({ _ in userIsTyping.value })
-            .compactMap({ UniaryOperation(rawValue: $0) })
+            .compactMap({ UnaryOperation(rawValue: $0) })
             .withLatestFrom(displayRaw, resultSelector: { (op: $0, display: $1) })
             .compactMap { result -> Double? in
                 let doubleValue = formatter.number(from: result.display)?.doubleValue
@@ -240,13 +240,13 @@ public struct CalculatorViewModel {
         brain = core
         selectedOperation = selected.asObservable()
         binaryOperationPressed = binaryOperationAction.asObserver()
-        uniaryOperationPressed = uniaryOperationAction.asObserver()
+        UnaryOperationPressed = UnaryOperationAction.asObserver()
         numberPressed = numberAction.asObserver()
         displayDriver = display.asDriver()
         disposables = CompositeDisposable(disposables: [numberToDisplay,
                                                         binaryToken,
                                                         operationTapped,
                                                         token,
-                                                        typedUniaryAction])
+                                                        typedunaryAction])
     }
 }
