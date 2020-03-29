@@ -171,6 +171,8 @@ public struct CalculatorViewModel {
     let binaryOperationPressed: AnyObserver<String>
     let UnaryOperationPressed: AnyObserver<String>
     let clearAction: AnyObserver<BrainAction>
+    let equalAction: AnyObserver<BrainAction>
+
     // disposables
     let disposables: CompositeDisposable
     let brain: Brain!
@@ -178,7 +180,7 @@ public struct CalculatorViewModel {
     init() {
         let numberAction = PublishSubject<String>()
         let display = BehaviorRelay<String>(value: "0")
-        let clear = PublishSubject<BrainAction>()
+        let brainAction = PublishSubject<BrainAction>()
         let binaryOperationAction = PublishSubject<String>()
         let UnaryOperationAction = PublishSubject<String>()
         let selected = BehaviorRelay<Operation>(value: .none)
@@ -189,18 +191,19 @@ public struct CalculatorViewModel {
 
 
         // clear
-        let clearTapped = clear.scan(BrainAction.reset) { (last, next) in
-            switch (last, next) {
-            case (.reset, .clear):
-                display.accept("0")
-                return .clear
-            default:
-                display.accept("0")
-                selected.accept(.none)
-                core.clear()
-            }
-            userIsTyping.accept(false)
-            return .reset
+        let clearTapped = brainAction.filter({ $0 != .evaluate })
+            .scan(BrainAction.reset) { (last, next) in
+                switch (last, next) {
+                case (.reset, .clear):
+                    display.accept("0")
+                    return .clear
+                default:
+                    display.accept("0")
+                    selected.accept(.none)
+                    core.clear()
+                }
+                userIsTyping.accept(false)
+                return .reset
         }
 
         clearTextDriver = Observable.combineLatest(userIsTyping,
@@ -257,14 +260,16 @@ public struct CalculatorViewModel {
         .map({ formatter.string(from: $0 as NSNumber)! })
         .bind(to: display)
 
-
-        let operationTapped = Observable.combineLatest(
+        let operandTapped = Observable.combineLatest(
             display.compactMap({ formatter.number(from: $0)?.doubleValue }),
             typedBinaryAction
         )
+
+        let addOperandToken = operandTapped
             .sample(userIsTyping.skip(1).debug().distinctUntilChanged().filter{ !$0 })
+            .map { $0.0 }
             .subscribe(onNext: {
-                core.add(operand: $0.0)
+                core.add(operand: $0)
             })
 
 
@@ -276,6 +281,25 @@ public struct CalculatorViewModel {
                 core.add(operation: $0)
             })
 
+        // Equals
+        let equalsTappedToken = brainAction.filter({ $0 == .evaluate })
+            .withLatestFrom(operandTapped)
+            .subscribe(onNext: {
+                if userIsTyping.value {
+                    core.add(operand: $0.0)
+                    core.add(operation: $0.1)
+                } else {
+                    core.add(operation: $0.1)
+                    core.add(operand: $0.0)
+                    selected.accept(.none)
+                }
+
+                if let result = core.evaluate(), let number = formatter.string(from: result as NSNumber) {
+                    display.accept(number)
+                }
+            })
+        // End Equals
+
         let binaryToken = typedBinaryAction
             .subscribe(onNext: { operation in
                 userIsTyping.accept(false)
@@ -286,7 +310,8 @@ public struct CalculatorViewModel {
         })
 
         brain = core
-        clearAction = clear.asObserver()
+        clearAction = brainAction.asObserver()
+        equalAction = brainAction.asObserver()
         selectedOperation = selected.asObservable()
         binaryOperationPressed = binaryOperationAction.asObserver()
         UnaryOperationPressed = UnaryOperationAction.asObserver()
@@ -294,8 +319,9 @@ public struct CalculatorViewModel {
         displayDriver = display.asDriver()
         disposables = CompositeDisposable(disposables: [numberToDisplay,
                                                         binaryToken,
-                                                        operationTapped,
+                                                        addOperandToken,
                                                         token,
+                                                        equalsTappedToken,
                                                         typedunaryAction])
     }
 }

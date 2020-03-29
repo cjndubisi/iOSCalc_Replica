@@ -77,6 +77,13 @@ class ViewController: UIViewController {
                 .disposed(by: disposeBag)
         }
 
+        if let equalButton = operationBtns.first(where: {
+            $0.currentTitle == BrainAction.evaluate.rawValue
+        }) {
+            equalButton.rx.tap.map { .evaluate }
+                .bind(to: viewModel.equalAction).disposed(by: disposeBag)
+        }
+
         Observable.combineLatest(
             viewModel.selectedOperation,
             Observable.just(operationBtns)

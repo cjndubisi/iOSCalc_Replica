@@ -240,6 +240,52 @@ class CalculatorViewModelTests: XCTestCase {
         scheduler.start()
 
         XCTAssertEqual(reseter.events, [.next(0, "AC"), .next(1, "C"), .next(2, "C"), .next(3, "AC")])
-        XCTAssertEqual(display.events.last, .next(2, "0"))
+        XCTAssertEqual(display.events.last, .next(3, "0"))
+    }
+
+    func testEqualsOperator() {
+
+        let display = scheduler.createObserver(String.self)
+
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "2"), .next(3, "6")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(2, Operation.subtract.rawValue)])
+            .bind(to: viewModel.binaryOperationPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(4, .evaluate)])
+            .bind(to: viewModel.equalAction)
+            .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(display.events.last, .next(4, "-4"))
+    }
+
+    func testEqualsWithOneOperandAndOneOperator() {
+
+        let display = scheduler.createObserver(String.self)
+
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "7")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(2, Operation.multiply.rawValue)])
+            .bind(to: viewModel.binaryOperationPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(3, .evaluate)])
+            .bind(to: viewModel.equalAction)
+            .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(display.events.last, .next(3, "49"))
     }
 }
