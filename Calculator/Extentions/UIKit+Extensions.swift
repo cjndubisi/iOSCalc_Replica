@@ -26,4 +26,15 @@ extension UIView {
         clipsToBounds = true
         layer.cornerRadius = radius ?? bounds.height/2
     }
+
+    func findAll<T: UIView>(type: T.Type) -> [T] {
+
+        return self.subviews.flatMap({ item -> [T] in
+            if let item = item as? T {
+                return [item]
+            }
+
+            return item.findAll(type: type)
+        })
+    }
 }

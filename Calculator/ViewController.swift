@@ -19,6 +19,10 @@ class ViewController: UIViewController {
     var viewModel: CalculatorViewModel = .init()
     let disposeBag = DisposeBag()
 
+    private lazy var allButtons: [UIButton] = {
+        return self.view.findAll(type: UIButton.self)
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
@@ -34,6 +38,8 @@ class ViewController: UIViewController {
         let keypad = buildKeypadLayout()
 
         viewModel.displayDriver.drive(display.rx.text).disposed(by: disposeBag)
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleGesture(sender:)))
+        view.addGestureRecognizer(panGesture)
 
         // Layout Constratints
         view.sv(display, keypad)
@@ -44,6 +50,33 @@ class ViewController: UIViewController {
             keypad.fillHorizontally().centerHorizontally(),
             rowSize/2
         )
+    }
+
+    var previousHighlighted: UIButton? {
+        didSet {
+            oldValue?.isHighlighted = false
+        }
+    }
+
+    @objc func handleGesture(sender: UIPanGestureRecognizer) {
+        let location = sender.location(in: view)
+        let velocity = sender.velocity(in: view)
+
+        let magnitude = sqrt((velocity.x * velocity.x) + (velocity.y * velocity.y))
+        let highlighted = allButtons.first(where: { $0.bounds.contains(view.convert(location, to: $0)) })
+        previousHighlighted = highlighted
+        switch sender.state {
+        case .began, .changed:
+            highlighted?.isHighlighted = true
+        case .ended:
+            highlighted?.isHighlighted = false
+            highlighted?.sendActions(for: .touchUpInside)
+            if magnitude > view.bounds.width/2 && display.frame.contains(location) {
+                print(magnitude, "magnitude")
+                display.text = String(display.text!.dropLast())
+            }
+        default: break
+        }
     }
 
     private func buildKeypadLayout() -> UIStackView {
@@ -91,16 +124,10 @@ class ViewController: UIViewController {
             return buttns.first(where: { $0.currentTitle == operation.rawValue })
             }
         .scan(UIButton()) { (last, next) -> UIButton? in
-            // remve and add background image for better transitions
-            UIView.animate(withDuration: 1, animations: {
-                last?.isHighlighted = true
-                next?.isHighlighted = true
-            }, completion: { (_) in
-                last?.isHighlighted = false
-                last?.isSelected = false
-                next?.isSelected = true
-            })
-                return next
+            last?.isHighlighted = false
+            last?.isSelected = false
+            next?.isSelected = true
+            return next
         }
         .subscribe().disposed(by: disposeBag)
 
