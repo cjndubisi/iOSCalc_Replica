@@ -28,6 +28,8 @@ class ViewController: UIViewController {
         display.textAlignment = .right
         display.contentMode = .bottom
         display.font = UIFont.systemFont(ofSize: rowSize, weight: .thin)
+        display.adjustsFontSizeToFitWidth = true
+        display.minimumScaleFactor = 0.6
 
         let keypad = buildKeypadLayout()
 
@@ -46,22 +48,49 @@ class ViewController: UIViewController {
 
     private func buildKeypadLayout() -> UIStackView {
         let (numberStack, buttons) = buildNumberRows()
-        let uniaryStack = uniaryOperationStack()
+        let (uniaryStack, uniaryBtns) = uniaryOperationStack()
         let (rightOperations, operationBtns) = buildOperationStack()
         let leftStack = UIStackView(arrangedSubviews: [uniaryStack, numberStack])
 
         // Target Actions
         let numberTokens = buttons.map { btn -> Disposable in
             let title = btn.currentTitle!
-            return btn.rx.tap.map({ title }).bind(to: viewModel.numberPressed)
+            return btn.rx.tap.map({ title })
+                .bind(to: viewModel.numberPressed)
         }
+
+        let uniaryToken = uniaryBtns.map { btn -> Disposable in
+            let title = btn.currentTitle!
+            return btn.rx.tap.map({ title })
+                .bind(to: viewModel.uniaryOperationPressed)
+        }
+
+        Observable.combineLatest(
+            viewModel.selectedOperation,
+            Observable.just(operationBtns)
+        ) { operation, buttns in
+            return buttns.first(where: { $0.currentTitle == operation.rawValue })
+            }
+        .scan(UIButton()) { (last, next) -> UIButton? in
+            // remve and add background image for better transitions
+            UIView.animate(withDuration: 1, animations: {
+                last?.isHighlighted = true
+                next?.isHighlighted = true
+            }, completion: { (_) in
+                last?.isHighlighted = false
+                last?.isSelected = false
+                next?.isSelected = true
+            })
+                return next
+        }
+        .subscribe().disposed(by: disposeBag)
 
         let binaryOpsTokens = operationBtns.map { btn -> Disposable in
             let title = btn.currentTitle!
             return btn.rx.tap.map({ title }).bind(to: viewModel.binaryOperationPressed)
         }
 
-        self.disposeBag.insert(numberTokens + binaryOpsTokens)
+        self.disposeBag.insert(numberTokens + binaryOpsTokens + uniaryToken)
 
 
         leftStack.axis = .vertical
@@ -131,7 +160,7 @@ class ViewController: UIViewController {
         return (container, buttons)
     }
 
-    private func uniaryOperationStack() -> UIStackView {
+    private func uniaryOperationStack() -> (container: UIStackView, subviews: [UIButton]) {
         var rows = [UIButton]()
 
         for item in ["AC", "±", "%"] {
@@ -147,7 +176,7 @@ class ViewController: UIViewController {
         currentStack.distribution = .fillEqually
         currentStack.alignment = .center
 
-        return currentStack
+        return (currentStack, rows)
     }
 
     private func buildOperationStack() -> (container: UIStackView, subviews: [UIButton]) {

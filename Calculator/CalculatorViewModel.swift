@@ -24,6 +24,7 @@ enum Operation: String {
     case divide = "÷"
     case add = "+"
     case subtract = "-"
+    case none
 
     var action: (Double, Double) -> Double {
         switch self {
@@ -31,6 +32,7 @@ enum Operation: String {
             case Operation.divide: return  (/)
             case Operation.add: return  (+)
             case Operation.subtract: return  (-)
+        case .none: return { _, _ in Double.greatestFiniteMagnitude }
         }
     }
 
@@ -40,21 +42,46 @@ enum Operation: String {
         case Operation.divide: return  .high
         case Operation.add: return  .low
         case Operation.subtract: return  .low
+        case .none: return .low
         }
     }
-
 }
+
+enum UniaryOperation: String {
+    case negate = "±"
+    case percentage = "%"
+
+    var action: (Double) -> Double {
+        switch self {
+        case .negate: return ({ -$0 })
+        case .percentage: return ({ $0/100 })
+        }
+    }
+}
+
 protocol Brain {
+    var isEmpty: Bool { get }
     mutating func add(operand: Double)
     mutating func add(operation: Operation)
+    func tansform(number: Double, using operator: UniaryOperation) -> Double
 
     mutating func evaluate() -> Double?
     mutating func evaluate(with operation: Operation) -> Double?
 }
 
+extension Brain {
+    func tansform(number: Double, using operation: UniaryOperation) -> Double {
+        return operation.action(number)
+    }
+}
+
 struct CalculatorBrain: Brain {
 
     private var opStack = [Element]()
+
+    var isEmpty: Bool {
+        return opStack.isEmpty
+    }
 
     mutating func add(operand: Double) {
         opStack.append(Element.operand(operand))
@@ -70,6 +97,7 @@ struct CalculatorBrain: Brain {
      }
 
     mutating func evaluate(with operation: Operation) -> Double? {
+        guard opStack.first != nil else { return nil }
         return evaluate(precedence: operation.precedence, stack: opStack).result
     }
 
@@ -88,6 +116,7 @@ struct CalculatorBrain: Brain {
             if case let .operation(op) = mutating.last {
                 if precedence.rawValue > op.precedence.rawValue {
                     // handle when the next operation is less (-, +) than a higer_op (x, /)
+                    // eg 1 + 5 * 3 -> + is less than *
                     return (value, precedence, mutating)
                 } else if precedence.rawValue == op.precedence.rawValue {
                     let result = evaluate(precedence: op.precedence, stack: mutating)
@@ -107,17 +136,26 @@ struct CalculatorBrain: Brain {
     }
 }
 
+fileprivate var formatter: NumberFormatter {
+    let formatter = NumberFormatter()
+
+    formatter.minimumFractionDigits = 0
+    formatter.maximumFractionDigits = 8
+    formatter.maximum = NSNumber(integerLiteral:  111111111 * 9)
+    formatter.numberStyle = .decimal
+
+    return formatter
+}
+
+
 public struct CalculatorViewModel {
 
-    private(set) var displayDriver: Driver<String>
-
+    let displayDriver: Driver<String>
+    let selectedOperation: Observable<Operation>
     // observers
     let numberPressed: AnyObserver<String>
     let binaryOperationPressed: AnyObserver<String>
-
-    // update AC to C
-    let canReset: Observable<Bool>
-
+    let uniaryOperationPressed: AnyObserver<String>
     // disposables
     let disposables: CompositeDisposable
     var brain: Brain!
@@ -126,16 +164,19 @@ public struct CalculatorViewModel {
         let numberAction = PublishSubject<String>()
         let display = BehaviorRelay<String>(value: "0")
         let binaryOperationAction = PublishSubject<String>()
+        let uniaryOperationAction = PublishSubject<String>()
+        let selected = PublishSubject<Operation>()
 
         let userIsTyping = BehaviorRelay<Bool>(value: false)
         var core: Brain = CalculatorBrain()
+        let displayRaw = display.map({ $0.replacingOccurrences(of: ",", with: "") })
 
         // convert to type
         let typedBinaryAction = binaryOperationAction
             .asObservable()
             .compactMap({ Operation(rawValue: $0)})
 
-        let numberToDisplay = numberAction.withLatestFrom(display) { number, display in
+        let numberToDisplay = numberAction.withLatestFrom(displayRaw) { number, display in
             // user is typing after either return(s)
             defer { userIsTyping.accept(true) }
 
@@ -148,16 +189,24 @@ public struct CalculatorViewModel {
 
             guard isTyping || number == "." else {
                 selected.onNext(.none)
-                return number
+                return formatter.string(from: formatter.number(from: number)!)!
             }
-            
-            return display + number
+            let fallback = formatter.number(from: display)!
+            return formatter.string(from: formatter.number(from: display + number) ?? fallback)!
         }
         .bind(to: display)
 
-        let formatter = NumberFormatter()
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 50
+        let typedUniaryAction = uniaryOperationAction
+            .filter({ _ in userIsTyping.value })
+            .compactMap({ UniaryOperation(rawValue: $0) })
+            .withLatestFrom(displayRaw, resultSelector: { (op: $0, display: $1) })
+            .compactMap { result -> Double? in
+                let doubleValue = formatter.number(from: result.display)?.doubleValue
+                guard let display = doubleValue else { return  nil }
+                return result.op.action(display)
+        }
+        .map({ formatter.string(from: $0 as NSNumber)! })
+        .bind(to: display)
 
 
         let operationTapped = Observable.combineLatest(
@@ -181,17 +230,23 @@ public struct CalculatorViewModel {
         let binaryToken = typedBinaryAction
             .subscribe(onNext: { operation in
                 userIsTyping.accept(false)
-
+                guard !core.isEmpty else { return }
+                selected.onNext(operation)
                 if let result = core.evaluate(with: operation), let number = formatter.string(from: result as NSNumber) {
                     display.accept(number)
                 }
         })
 
         brain = core
+        selectedOperation = selected.asObservable()
         binaryOperationPressed = binaryOperationAction.asObserver()
+        uniaryOperationPressed = uniaryOperationAction.asObserver()
         numberPressed = numberAction.asObserver()
         displayDriver = display.asDriver()
-        canReset = userIsTyping.asObservable()
-        disposables = CompositeDisposable(disposables: [numberToDisplay, binaryToken, operationTapped, token])
+        disposables = CompositeDisposable(disposables: [numberToDisplay,
+                                                        binaryToken,
+                                                        operationTapped,
+                                                        token,
+                                                        typedUniaryAction])
     }
 }

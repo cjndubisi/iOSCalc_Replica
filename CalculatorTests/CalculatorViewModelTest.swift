@@ -170,7 +170,26 @@ class CalculatorViewModelTests: XCTestCase {
 
         XCTAssertEqual(display.events[(display.events.count-2)...], [.next(6, "16"), .next(8, "15")])
     }
-    
+
+    func testSelectedOperation() {
+        let selectedObserver = scheduler.createObserver(String.self)
+
+        viewModel.numberPressed.onNext("3")
+
+        let record: [Recorded<Event<String>>] = [.next(2, Operation.add.rawValue),
+                                       .next(4, Operation.multiply.rawValue),
+                                       .next(6, Operation.add.rawValue),
+                                       .next(8, Operation.multiply.rawValue)]
+
+        scheduler.createColdObservable(record)
+            .bind(to: selectedObserver)
+            .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(selectedObserver.events, record)
+    }
+
     func testDecimalOccurance() {
         let display = scheduler.createObserver(String.self)
 
