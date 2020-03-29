@@ -191,6 +191,12 @@ public struct CalculatorViewModel {
                 selected.onNext(.none)
                 return formatter.string(from: formatter.number(from: number)!)!
             }
+
+            if number == "." && display == "0" {
+                return "0."
+            }
+
+            // format
             let fallback = formatter.number(from: display)!
             return formatter.string(from: formatter.number(from: display + number) ?? fallback)!
         }
