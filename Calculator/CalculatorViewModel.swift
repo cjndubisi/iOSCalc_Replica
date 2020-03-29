@@ -166,6 +166,10 @@ public struct CalculatorViewModel {
     let clearTextDriver: Driver<String>
     let selectedOperation: Observable<Operation>
 
+    // private state
+    private let displayRelay: BehaviorRelay<String>
+    private let isTyping: BehaviorRelay<Bool>
+
     // observers
     let numberPressed: AnyObserver<String>
     let binaryOperationPressed: AnyObserver<String>
@@ -310,12 +314,14 @@ public struct CalculatorViewModel {
         })
 
         brain = core
+        isTyping = userIsTyping
         clearAction = brainAction.asObserver()
         equalAction = brainAction.asObserver()
         selectedOperation = selected.asObservable()
         binaryOperationPressed = binaryOperationAction.asObserver()
         UnaryOperationPressed = UnaryOperationAction.asObserver()
         numberPressed = numberAction.asObserver()
+        displayRelay = display
         displayDriver = display.asDriver()
         disposables = CompositeDisposable(disposables: [numberToDisplay,
                                                         binaryToken,
@@ -323,5 +329,16 @@ public struct CalculatorViewModel {
                                                         token,
                                                         equalsTappedToken,
                                                         typedunaryAction])
+    }
+
+    func delete() {
+        let display = displayRelay.value
+        guard isTyping.value else { return }
+
+        var number = formatter.number(from: String(display.dropLast()).replacingOccurrences(of: ",", with: ""))
+        if number == nil {
+            number = NSNumber(value: 0)
+        }
+        displayRelay.accept(formatter.string(from: number!)!)
     }
 }

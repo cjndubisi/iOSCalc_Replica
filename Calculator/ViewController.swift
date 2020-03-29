@@ -72,8 +72,7 @@ class ViewController: UIViewController {
             highlighted?.isHighlighted = false
             highlighted?.sendActions(for: .touchUpInside)
             if magnitude > view.bounds.width/2 && display.frame.contains(location) {
-                print(magnitude, "magnitude")
-                display.text = String(display.text!.dropLast())
+                viewModel.delete()
             }
         default: break
         }
