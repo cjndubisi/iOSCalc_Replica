@@ -38,3 +38,10 @@ extension UIView {
         })
     }
 }
+
+extension CGFloat {
+
+    var dp: CGFloat {
+        return (self / 375) * UIScreen.main.bounds.width
+    }
+}

@@ -227,7 +227,7 @@ class ViewController: UIViewController {
     private func buildOperationStack() -> (container: UIStackView, subviews: [UIButton]) {
         var rows = [UIButton]()
 
-        for item in ["=", "+", "-", "×", "÷"]{
+        for item in ["=", "+", "-", "×", "÷"] {
             let button = RoundButton()
             operationStyle(button)
             numberConstraints(button)
@@ -249,7 +249,7 @@ let fontSize: CGFloat = 45
 let UnaryOperationStyle: (UIButton) -> Void = { btn in
     btn.setBackgroundColor(ColorPalette.UnaryOperationButton, for: .normal)
     btn.setBackgroundColor(ColorPalette.UnaryOperationButtonHighlighted, for: .highlighted)
-    btn.titleLabel?.font =  UIFont.systemFont(ofSize: fontSize * 0.8, weight: .medium)
+    btn.titleLabel?.font =  UIFont.systemFont(ofSize: fontSize.dp * 0.8, weight: .medium)
     btn.setTitleColor(.black, for: .normal)
 }
 
@@ -259,7 +259,7 @@ let operationStyle: (UIButton) -> Void = { btn in
     btn.setBackgroundColor(.white, for: .selected)
 
     btn.contentEdgeInsets.bottom = 5
-    btn.titleLabel?.font = UIFont.systemFont(ofSize: fontSize, weight: .regular)
+    btn.titleLabel?.font = UIFont.systemFont(ofSize: fontSize.dp, weight: .regular)
     btn.setTitleColor(.white, for: .normal)
     btn.setTitleColor(ColorPalette.binaryOperationButton, for: .selected)
 }
@@ -267,7 +267,7 @@ let operationStyle: (UIButton) -> Void = { btn in
 let numberStyle: (UIButton) -> Void = { btn in
     btn.setBackgroundColor(ColorPalette.numberButton, for: .normal)
     btn.setBackgroundColor(ColorPalette.numberButtonHighlighted, for: .highlighted)
-    btn.titleLabel?.font = UIFont.systemFont(ofSize: fontSize, weight: .regular)
+    btn.titleLabel?.font = UIFont.systemFont(ofSize: fontSize.dp, weight: .regular)
     btn.setTitleColor(.white, for: .normal)
 }
 
