@@ -19,6 +19,12 @@ enum Precedence: Int {
     case low = 5
 }
 
+enum BrainAction: String {
+    case clear = "c"
+    case reset = "ac"
+    case evaluate = "="
+}
+
 enum Operation: String {
     case multiply = "×"
     case divide = "÷"
@@ -65,11 +71,13 @@ protocol Brain {
     mutating func add(operation: Operation)
     func tansform(number: Double, using operator: UnaryOperation) -> Double
 
-    mutating func evaluate() -> Double?
-    mutating func evaluate(with operation: Operation) -> Double?
+    mutating func clear()
+    func evaluate() -> Double?
+    func evaluate(with operation: Operation) -> Double?
 }
 
 extension Brain {
+
     func tansform(number: Double, using operation: UnaryOperation) -> Double {
         return operation.action(number)
     }
@@ -91,12 +99,16 @@ struct CalculatorBrain: Brain {
         opStack.append(.operation(operation))
     }
 
-    mutating func evaluate() -> Double? {
+    mutating func clear() {
+        opStack = []
+    }
+
+    func evaluate() -> Double? {
         let result = evaluate(precedence: .low, stack: opStack)
         return result.result
-     }
+    }
 
-    mutating func evaluate(with operation: Operation) -> Double? {
+    func evaluate(with operation: Operation) -> Double? {
         guard opStack.first != nil else { return nil }
         return evaluate(precedence: operation.precedence, stack: opStack).result
     }
@@ -151,25 +163,56 @@ fileprivate var formatter: NumberFormatter {
 public struct CalculatorViewModel {
 
     let displayDriver: Driver<String>
+    let clearTextDriver: Driver<String>
     let selectedOperation: Observable<Operation>
+
     // observers
     let numberPressed: AnyObserver<String>
     let binaryOperationPressed: AnyObserver<String>
     let UnaryOperationPressed: AnyObserver<String>
+    let clearAction: AnyObserver<BrainAction>
     // disposables
     let disposables: CompositeDisposable
-    var brain: Brain!
+    let brain: Brain!
 
     init() {
         let numberAction = PublishSubject<String>()
         let display = BehaviorRelay<String>(value: "0")
+        let clear = PublishSubject<BrainAction>()
         let binaryOperationAction = PublishSubject<String>()
         let UnaryOperationAction = PublishSubject<String>()
-        let selected = PublishSubject<Operation>()
+        let selected = BehaviorRelay<Operation>(value: .none)
 
         let userIsTyping = BehaviorRelay<Bool>(value: false)
         var core: Brain = CalculatorBrain()
         let displayRaw = display.map({ $0.replacingOccurrences(of: ",", with: "") })
+
+
+        // clear
+        let clearTapped = clear.scan(BrainAction.reset) { (last, next) in
+            switch (last, next) {
+            case (.reset, .clear):
+                display.accept("0")
+                return .clear
+            default:
+                display.accept("0")
+                selected.accept(.none)
+                core.clear()
+            }
+            userIsTyping.accept(false)
+            return .reset
+        }
+
+        clearTextDriver = Observable.combineLatest(userIsTyping,
+                                                   clearTapped.startWith(.reset))
+            .map { (typing, state) in
+                if state == .clear || !typing && core.isEmpty { return "AC" }
+
+                if typing || !core.isEmpty { return "C" }
+
+                return "C"
+        }.asDriver(onErrorJustReturn: "AC")
+        // End: Clear
 
         // convert to type
         let typedBinaryAction = binaryOperationAction
@@ -188,7 +231,7 @@ public struct CalculatorViewModel {
             }
 
             guard isTyping || number == "." else {
-                selected.onNext(.none)
+                selected.accept(.none)
                 return formatter.string(from: formatter.number(from: number)!)!
             }
 
@@ -236,14 +279,14 @@ public struct CalculatorViewModel {
         let binaryToken = typedBinaryAction
             .subscribe(onNext: { operation in
                 userIsTyping.accept(false)
-                guard !core.isEmpty else { return }
-                selected.onNext(operation)
+                selected.accept(operation)
                 if let result = core.evaluate(with: operation), let number = formatter.string(from: result as NSNumber) {
                     display.accept(number)
                 }
         })
 
         brain = core
+        clearAction = clear.asObserver()
         selectedOperation = selected.asObservable()
         binaryOperationPressed = binaryOperationAction.asObserver()
         UnaryOperationPressed = UnaryOperationAction.asObserver()

@@ -64,6 +64,18 @@ class ViewController: UIViewController {
             return btn.rx.tap.map({ title })
                 .bind(to: viewModel.UnaryOperationPressed)
         }
+        if let ACButton = unaryBtns.first(where: {
+            ["c", "ac"].contains($0.currentTitle?.lowercased())
+        }) {
+            unowned let btn = ACButton
+            ACButton.rx.tap
+                .compactMap { BrainAction(rawValue: btn.currentTitle!.lowercased()) }
+                .bind(to: viewModel.clearAction)
+                .disposed(by: disposeBag)
+            viewModel.clearTextDriver
+                .drive(ACButton.rx.title())
+                .disposed(by: disposeBag)
+        }
 
         Observable.combineLatest(
             viewModel.selectedOperation,

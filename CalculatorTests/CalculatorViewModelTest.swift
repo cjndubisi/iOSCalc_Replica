@@ -216,4 +216,30 @@ class CalculatorViewModelTests: XCTestCase {
 
         XCTAssertEqual(display.events[1...], [.next(1, "0."), .next(3, "0.2"), .next(4, "0.2")])
     }
+
+    func testClearChangesToACWhenDispalyHasDigitAndOperatorIsSelected() {
+
+       let display = scheduler.createObserver(String.self)
+        let reseter = scheduler.createObserver(String.self)
+
+        viewModel.displayDriver.drive(display).disposed(by: disposeBag)
+        viewModel.clearTextDriver.drive(reseter).disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(1, "123")])
+            .bind(to: viewModel.numberPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(2, Operation.add.rawValue)])
+            .bind(to: viewModel.binaryOperationPressed)
+            .disposed(by: disposeBag)
+
+        scheduler.createColdObservable([.next(3, .clear)])
+        .bind(to: viewModel.clearAction)
+        .disposed(by: disposeBag)
+
+        scheduler.start()
+
+        XCTAssertEqual(reseter.events, [.next(0, "AC"), .next(1, "C"), .next(2, "C"), .next(3, "AC")])
+        XCTAssertEqual(display.events.last, .next(2, "0"))
+    }
 }
